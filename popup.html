@@ -8,7 +8,7 @@
     
     /* Tabs */
     .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-    .tab-btn { flex: 1; padding: 8px; background: #333; border: none; color: #aaa; cursor: pointer; font-size: 12px; border-radius: 4px; transition: 0.2s; }
+    .tab-btn { flex: 1; padding: 8px 4px; background: #333; border: none; color: #aaa; cursor: pointer; font-size: 12px; border-radius: 4px; transition: 0.2s; }
     .tab-btn:hover { background: #444; color: #fff; }
     .tab-btn.active { background: #ff4444; color: white; font-weight: bold; }
     
@@ -18,6 +18,20 @@
     input:focus { border-color: #ff4444; }
     button#add { padding: 8px 15px; background: #444; border: none; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
     button#add:hover { background: #ff4444; }
+    #scan-area button { flex: 1; padding: 8px; background: #444; border: none; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 11px; }
+    #scan-area button:hover:not(:disabled) { background: #ff4444; }
+    #scan-area button:disabled { opacity: 0.4; cursor: default; }
+
+    /* Liked songs scan results */
+    li.scan-item { padding: 6px 10px; }
+    li.scan-item label { display: flex; align-items: center; gap: 8px; width: 100%; cursor: pointer; min-width: 0; }
+    li.scan-item input { flex: none; accent-color: #ff4444; }
+    .scan-text { min-width: 0; flex: 1; }
+    .scan-text div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .scan-sub { font-size: 10px; color: #888; }
+    li.scan-header { font-size: 11px; color: #aaa; background: #1e1e1e; position: sticky; top: 0; }
+    li.scan-header a { color: #ff4444; cursor: pointer; text-decoration: none; }
+    li.scan-message { display: block; text-align: center; color: #888; padding: 40px 15px; line-height: 1.5; white-space: pre-line; border-bottom: none; }
 
     /* List */
     ul { list-style: none; padding: 0; margin: 0; height: 250px; overflow-y: auto; border: 1px solid #333; border-radius: 4px; background: #222; }
@@ -31,24 +45,31 @@
     .actions { display: flex; gap: 5px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; }
     .action-btn { flex: 1; padding: 6px; background: #333; border: none; color: #ccc; font-size: 11px; cursor: pointer; border-radius: 4px; }
     .action-btn:hover { background: #444; color: #fff; }
+    .action-btn.drop-target { background: rgba(255,68,68,0.25); color: #fff; outline: 2px dashed #ff4444; }
     
     .status-bar { margin-top: 10px; font-size: 10px; color: #666; text-align: center; font-style: italic; }
     .footer { margin-top: 5px; font-size: 10px; color: #444; text-align: center; }
   </style>
 </head>
 <body>
-  <h2>YTM AI Blocker <span style="font-size:10px; color:#666; float:right; margin-top:4px;">v1.4</span></h2>
+  <h2>YTM AI Blocker <span style="font-size:10px; color:#666; float:right; margin-top:4px;">v1.5</span></h2>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="keywords">Keywords</button>
     <button class="tab-btn" data-tab="songs">Songs</button>
     <button class="tab-btn" data-tab="artists">Artists</button>
     <button class="tab-btn" data-tab="ai">AI DB</button>
+    <button class="tab-btn" data-tab="liked">Liked</button>
   </div>
 
   <div class="input-group" id="input-area">
     <input type="text" id="input" placeholder="Enter keyword...">
     <button id="add">ADD</button>
+  </div>
+
+  <div class="input-group" id="scan-area" style="display: none;">
+    <button id="btn-scan">🔍 Scan Liked Songs</button>
+    <button id="btn-remove-liked" disabled>🗑 Remove Selected</button>
   </div>
 
   <ul id="list"></ul>

@@ -1,20 +1,30 @@
 {
   "manifest_version": 3,
   "name": "YTM AI Artist & Song Blocker",
-  "version": "1.4",
-  "description": "Block specific artists and keywords on YouTube Music. Automatically Take control over AI slop with Soul Over AI integration",
+  "version": "1.5",
+  "description": "Block specific artists and keywords on YouTube Music. Automatically Take control over AI slop with the Zoundhub AI artist database",
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "https://music.youtube.com/*",
-    "https://raw.githubusercontent.com/xoundbyte/soul-over-ai/*"
+    "https://zoundhub.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Manage Block List"
   },
   "content_scripts": [
+    {
+      "matches": ["https://music.youtube.com/*"],
+      "js": ["page-bridge.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
     {
       "matches": ["https://music.youtube.com/*"],
       "js": ["content.js"],
