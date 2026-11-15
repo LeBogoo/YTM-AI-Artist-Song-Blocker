@@ -1,0 +1,105 @@
+name: Build Chrome extension
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PACKAGE_NAME: ytm-ai-artist-song-blocker
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Read version from manifest
+        id: meta
+        run: |
+          version=$(jq -r .version manifest.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match manifest.json version $version"
+            exit 1
+          fi
+
+      - name: Check scripts
+        run: for f in *.js; do node --check "$f"; done
+
+      - name: Stage extension files
+        # Everything tracked in git except repo-only files
+        run: |
+          mkdir -p build/extension dist
+          git ls-files -z \
+            | grep -zvE '^(\.github/|\.gitignore$|README\.md$|LICENSE)' \
+            | xargs -0 cp --parents -t build/extension
+          ls -la build/extension
+
+      - name: Build ZIP (Chrome Web Store upload / load unpacked)
+        run: |
+          cd build/extension
+          zip -r -X -9 "../../dist/${PACKAGE_NAME}-${{ steps.meta.outputs.version }}.zip" .
+
+      - name: Build signed CRX
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          key="$RUNNER_TEMP/extension-key.pem"
+          if [[ -n "$CRX_PRIVATE_KEY" ]]; then
+            printf '%s\n' "$CRX_PRIVATE_KEY" > "$key"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "::error::The CRX_PRIVATE_KEY secret is required for release builds (it keeps the extension ID stable)"
+            exit 1
+          else
+            echo "::warning::CRX_PRIVATE_KEY secret not set: signing with a throwaway key, so this CRX gets a new extension ID"
+          fi
+
+          # crx3 creates the key file if it does not exist yet
+          npx --yes crx3@2.0.0 -p "$key" -o "dist/${PACKAGE_NAME}-${{ steps.meta.outputs.version }}.crx" -- build/extension
+
+          # Extension ID = first 128 bits of SHA-256(public key DER), hex digits mapped 0-f -> a-p
+          id=$(openssl pkey -in "$key" -pubout -outform DER | sha256sum | head -c 32 | tr '0-9a-f' 'a-p')
+          rm -f "$key"
+          {
+            echo "### ${PACKAGE_NAME} ${{ steps.meta.outputs.version }}"
+            echo "Extension ID: \`$id\`"
+            echo
+            echo '```'
+            ls -l dist
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_NAME }}-${{ steps.meta.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.PACKAGE_NAME }}-${{ needs.build.outputs.version }}
+          path: dist
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true

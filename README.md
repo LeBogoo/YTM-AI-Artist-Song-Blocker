@@ -77,6 +77,13 @@ Create custom rules to skip tracks based on title keywords.
 4. Click **Load unpacked**.
 5. Select the folder containing the extension files.
 
+### Option C: Prebuilt Packages
+Every push builds the extension with GitHub Actions (see the **Actions** tab, artifacts of the *Build Chrome extension* run). Tagged versions (`v1.5`, …) are attached to a GitHub Release.
+* **`.zip`**: unzip it and use *Load unpacked* (Option B), or upload it to the Chrome Web Store.
+* **`.crx`**: signed package. Chrome on Windows and macOS only installs `.crx` files from the Web Store or via enterprise policy; on Linux you can drag it onto `chrome://extensions` with Developer mode on.
+
+**Maintainers:** releases are signed with the private key in the `CRX_PRIVATE_KEY` repository secret, which keeps the extension ID the same across versions. Create one once with `openssl genrsa -out extension-key.pem 2048`, store it with `gh secret set CRX_PRIVATE_KEY < extension-key.pem`, and keep the file somewhere safe (never commit it). To release, bump `version` in `manifest.json` and push a matching tag, e.g. `git tag v1.5 && git push origin v1.5`.
+
 ---
 
 ## 🛠️ Usage
